@@ -1,0 +1,53 @@
+From ad5fd1c9434c3832bd22e721cef7ae2ccd2e8cdb Mon Sep 17 00:00:00 2001
+From: Dominik 'Rathann' Mierzejewski <dominik@greysector.net>
+Date: Wed, 28 Mar 2018 11:51:13 +0200
+Subject: [PATCH] fix bench test on 32bit architectures
+
+Fixes:
+./config.go:277:42: constant 10000000000 overflows int
+./config.go:277:48: constant 100000000000 overflows int
+./config.go:277:54: constant 1000000000000 overflows int
+while running internal/tool/bench test.
+---
+ internal/tool/bench/benchmarks.go | 2 +-
+ internal/tool/bench/config.go     | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/internal/tool/bench/benchmarks.go b/internal/tool/bench/benchmarks.go
+index 059d69c..1537bf5 100644
+--- a/internal/tool/bench/benchmarks.go
++++ b/internal/tool/bench/benchmarks.go
+@@ -164,7 +164,7 @@ func benchmarkSuite(codecs []string, files []file, levels, sizes []int, tick fun
+ 					b = testutil.ResizeData(b, n)
+ 				}
+ 				fname := strings.Replace(f.Rel, string(filepath.Separator), "_", -1)
+-				name := fmt.Sprintf("%s:%d:%s", fname, l, intName(len(b)))
++				name := fmt.Sprintf("%s:%d:%s", fname, l, intName(int64(len(b))))
+ 				for j, c := range codecs {
+ 					if tick != nil {
+ 						tick()
+diff --git a/internal/tool/bench/config.go b/internal/tool/bench/config.go
+index a6a4192..ba0bc5d 100644
+--- a/internal/tool/bench/config.go
++++ b/internal/tool/bench/config.go
+@@ -252,7 +252,7 @@ func (vs *varStrings) Set(ss string) error {
+ func (ds *varInts) String() string {
+ 	var ss []string
+ 	for _, d := range *ds {
+-		ss = append(ss, intName(d))
++		ss = append(ss, intName(int64(d)))
+ 	}
+ 	return strings.Join(ss, ",")
+ }
+@@ -272,7 +272,7 @@ func (ds *varInts) Set(ss string) error {
+ // It uses scientific notation for exact powers of 10.
+ // It uses SI suffixes for powers of 1024.
+ // If the number is small enough, it will be printed as is.
+-func intName(n int) string {
++func intName(n int64) string {
+ 	switch n {
+ 	case 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12:
+ 		s := fmt.Sprintf("%e", float64(n))
+-- 
+2.14.3
+
